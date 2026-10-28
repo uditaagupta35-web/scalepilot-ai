@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScalePilot AI</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root { --navy:#14213d; --blue:#2563eb; --light:#f3f6fb; --green:#16865b; --orange:#c77700; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:Arial,Helvetica,sans-serif; background:var(--light); color:#1f2937; }
+header { background:var(--navy); color:white; padding:24px 6%; }
+header h1 { margin:0 0 7px; font-size:28px; }
+header p { margin:0; color:#dbeafe; }
+main { max-width:1100px; margin:24px auto; padding:0 18px 30px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); gap:18px; }
+.card { background:white; border-radius:14px; padding:20px; box-shadow:0 4px 18px #17255412; }
+h2 { font-size:18px; margin:0 0 16px; color:var(--navy); }
+label { display:block; font-size:14px; font-weight:bold; margin:12px 0 6px; }
+input { width:100%; padding:11px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px; }
+button { margin-top:16px; width:100%; border:0; padding:12px; background:var(--blue); color:white; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; }
+button:hover { background:#1d4ed8; }
+.metric { font-size:30px; font-weight:bold; color:var(--blue); }
+.small { color:#64748b; font-size:13px; }
+.status { padding:12px; border-radius:9px; background:#ecfdf5; color:#166534; font-weight:bold; }
+.warn { background:#fff7ed; color:#9a3412; }
+table { border-collapse:collapse; width:100%; font-size:13px; }
+th,td { text-align:left; padding:9px 7px; border-bottom:1px solid #e2e8f0; }
+th { color:#475569; }
+footer { text-align:center; color:#64748b; font-size:12px; padding:0 15px 25px; }
+@media(max-width:600px) { header h1 {font-size:22px;} }
+</style>
+</head>
+<body>
+<header>
+  <h1>🚀 ScalePilot AI</h1>
+  <p>Predictive Auto-Scaling of Cloud Applications Using Machine Learning</p>
+</header>
+<main>
+  <div class="grid">
+    <section class="card">
+      <h2>Enter Current Workload</h2>
+      <form method="post">
+        <label for="cpu">Current CPU usage (%)</label>
+        <input id="cpu" name="cpu" type="number" min="0" max="100" step="0.1" value="{{ cpu }}" required>
+        <label for="memory">Current memory usage (%)</label>
+        <input id="memory" name="memory" type="number" min="0" max="100" step="0.1" value="{{ memory }}" required>
+        <label for="requests">Requests per minute</label>
+        <input id="requests" name="requests" type="number" min="0" max="100000" value="{{ requests }}" required>
+        <button type="submit">Predict &amp; Recommend Scaling</button>
+      </form>
+      <p class="small">Demo uses sample workload data. It does not control a real cloud account.</p>
+    </section>
+    <section class="card">
+      <h2>Prediction Result</h2>
+      <p class="small">Predicted CPU usage</p>
+      <div class="metric">{{ predicted_cpu }}%</div>
+      <p class="small">Recommended application instances</p>
+      <div class="metric">{{ instances }}</div>
+      <div class="status {{ 'warn' if action != 'No change needed' else '' }}">{{ action }}</div>
+      <p class="small" style="margin-top:12px">Scaling rule: predicted CPU above 70% → scale up; below 30% → scale down; otherwise → keep capacity.</p>
+    </section>
+    <section class="card">
+      <h2>How the AI prediction works</h2>
+      <p>1. Read the request rate.</p>
+      <p>2. A simple Linear Regression model learns from example workload data.</p>
+      <p>3. Predict future CPU usage.</p>
+      <p>4. Recommend the number of app instances using simple thresholds.</p>
+    </section>
+  </div>
+  <div class="grid" style="margin-top:18px">
+    <section class="card">
+      <h2>Workload Prediction Chart</h2>
+      <canvas id="workloadChart" height="190"></canvas>
+    </section>
+    <section class="card">
+      <h2>Recent Prediction History</h2>
+      {% if history %}
+      <table>
+        <thead><tr><th>Time</th><th>CPU input</th><th>Predicted</th><th>Instances</th></tr></thead>
+        <tbody>{% for row in history %}
+          <tr><td>{{ row[0] }}</td><td>{{ row[1] }}%</td><td>{{ row[2] }}%</td><td>{{ row[3] }}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+      {% else %}
+      <p class="small">No saved predictions yet. Submit the form to create the first record.</p>
+      {% endif %}
+    </section>
+  </div>
+</main>
+<footer>Mini-project demonstration • Flask + Python + Scikit-learn + SQLite + Chart.js</footer>
+<script>
+const chartLabels = {{ chart_labels|tojson }};
+const chartValues = {{ chart_values|tojson }};
+new Chart(document.getElementById('workloadChart'), {
+  type: 'line',
+  data: { labels: chartLabels, datasets: [
+    { label: 'Historical CPU (%)', data: chartValues, borderWidth: 2, tension: 0.25 },
+    { label: '70% scale-up threshold', data: chartLabels.map(() => 70), borderDash: [6,5], borderWidth: 1, pointRadius: 0 }
+  ]},
+  options: { responsive: true, scales: { y: { beginAtZero: true, max: 100, title: { display:true, text:'CPU usage (%)' } } } }
+});
+</script>
+</body>
+</html>
